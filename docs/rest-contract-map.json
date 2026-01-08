@@ -1,0 +1,1520 @@
+{
+  "metadata": {
+    "format": "rest-contract-map",
+    "version": 1,
+    "scope": [
+      "container",
+      "container-common"
+    ]
+  },
+  "auth_flow": {
+    "session": {
+      "session_handler": "WebServerTask creates a SessionHandler, sets max inactive interval, and sets JSESSIONID_<port> cookie.",
+      "module": "container-common/src/main/java/com/streamsets/datacollector/http/WebServerTask.java"
+    },
+    "modes": {
+      "dpm_sso": "When DPM is enabled, WebServerTask configures SSOAuthenticator with app auth token and component ID; activation checks are injected when enabled.",
+      "basic_digest": "WebServerTask uses ProxyAuthenticator wrapping BasicAuthenticator/DigestAuthenticator with LoginService.",
+      "form": "WebServerTask configures FormAuthenticator via ProxyAuthenticator; LoginServlet redirects to j_security_check with credentials.",
+      "module": [
+        "container-common/src/main/java/com/streamsets/datacollector/http/WebServerTask.java",
+        "container-common/src/main/java/com/streamsets/datacollector/http/LoginServlet.java"
+      ]
+    },
+    "token_auth": {
+      "behavior": "ProxyAuthenticator supports auth_token/auth_user headers or params; validates runtime tokens and seeds session authentication; also handles CORS OPTIONS.",
+      "module": "container-common/src/main/java/com/streamsets/datacollector/http/ProxyAuthenticator.java"
+    },
+    "activation_gate": {
+      "behavior": "ActivationAuthenticator restricts roles when activation is invalid/expired.",
+      "module": "container-common/src/main/java/com/streamsets/datacollector/activation/ActivationAuthenticator.java"
+    },
+    "logout": {
+      "endpoint": "POST /v1/authentication/logout",
+      "behavior": "Invalidates HTTP session.",
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/AuthenticationResource.java"
+    }
+  },
+  "error_handling": {
+    "exception_mapper": "ExceptionToHttpErrorProvider maps exceptions to JSON error payloads. Non-RestResource: 500 with errorCode (StageException/ErrorCodeException). RestResource: REST_000 (500) or REST_001 (400).",
+    "module": "container/src/main/java/com/streamsets/datacollector/restapi/configuration/ExceptionToHttpErrorProvider.java"
+  },
+  "resources": [
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/publicrestapi/PublicRestAPI.java",
+      "base_path": "/ping",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/ping",
+          "request_dto": null,
+          "response_dto": "String",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/publicrestapi/PublicClusterResource.java",
+      "base_path": "/v1/cluster",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/cluster/callback",
+          "request_dto": "CallbackInfoJson",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/cluster/callbackWithResponse",
+          "request_dto": "CallbackInfoJson",
+          "response_dto": "Map<String,Object> or DisconnectedSecurityInfo JSON",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/cluster/previewCallback/{previewerId}",
+          "request_dto": "CallbackInfoJson",
+          "response_dto": "Map<String,Object>",
+          "status_codes": [
+            200,
+            500
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/publicrestapi/CredentialsDeploymentResource.java",
+      "base_path": "/v1/deployment",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/deployment/deployCredentials",
+          "request_dto": "CredentialsBeanJson",
+          "response_dto": "CredentialDeploymentResponseJson",
+          "status_codes": [
+            200,
+            400
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/publicrestapi/PublicGatewayResource.java",
+      "base_path": "/v1/gateway",
+      "endpoints": [
+        {
+          "method": "GET|POST|PUT|DELETE|HEAD",
+          "path": "/v1/gateway/{subResources:*}",
+          "request_dto": "InputStream (POST/PUT)",
+          "response_dto": "Proxied Response",
+          "status_codes": [
+            200,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/publicrestapi/SetPasswordResource.java",
+      "base_path": "/v1/usermanagement/users",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/usermanagement/users/setPassword",
+          "request_dto": "RestRequest<RSetPassword>",
+          "response_dto": "OkRestResponse<Void>",
+          "status_codes": [
+            204
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/RestAPI.java",
+      "base_path": "/ping",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/ping",
+          "request_dto": null,
+          "response_dto": "String",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/InfoResource.java",
+      "base_path": "/v1/system",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/system/info",
+          "request_dto": null,
+          "response_dto": "BuildInfo (JSON)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/info/currentUser",
+          "request_dto": null,
+          "response_dto": "Map {user, roles, groups}",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/info/serverTime",
+          "request_dto": null,
+          "response_dto": "Map {serverTime}",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/info/remote",
+          "request_dto": null,
+          "response_dto": "Map {registrationStatus}",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/info/id",
+          "request_dto": null,
+          "response_dto": "Map {id}",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/stats",
+          "request_dto": null,
+          "response_dto": "Map (stats info)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/stats",
+          "request_dto": null,
+          "response_dto": "Map (stats info)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/ConfigurationResource.java",
+      "base_path": "/v1/system",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/system/configuration/ui",
+          "request_dto": null,
+          "response_dto": "Configuration (subset)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/configuration",
+          "request_dto": null,
+          "response_dto": "Configuration (masked map)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/ClusterResource.java",
+      "base_path": "/v1/cluster",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/cluster/redirectToSlave",
+          "request_dto": null,
+          "response_dto": "Redirect Response",
+          "status_codes": [
+            200,
+            500
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/AsterRegistrationResource.java",
+      "base_path": "/v1/aregistration",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/aregistration",
+          "request_dto": null,
+          "response_dto": null,
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/aregistration",
+          "request_dto": "form(state, code)",
+          "response_dto": null,
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/SupportResource.java",
+      "base_path": "/v1/system",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/system/gc",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/threads/dumps",
+          "request_dto": null,
+          "response_dto": "Zip stream (octet-stream)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/AdminResource.java",
+      "base_path": "/v1/system",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/system/shutdown",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/restart",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/enableDPM",
+          "request_dto": "DPMInfoJson",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/disableDPM",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/createDPMUsers",
+          "request_dto": "DPMInfoJson",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/threads",
+          "request_dto": null,
+          "response_dto": "List<Map>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/directories",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/health/categories",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/health/report",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/users",
+          "request_dto": null,
+          "response_dto": "List<UserJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/groups",
+          "request_dto": null,
+          "response_dto": "List<UserJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/bundle/list",
+          "request_dto": null,
+          "response_dto": "List<SupportBundleContentDefinitionJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/bundle/generate",
+          "request_dto": null,
+          "response_dto": "Octet-stream bundle",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/LogResource.java",
+      "base_path": "/v1/system",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/system/logs",
+          "request_dto": null,
+          "response_dto": "List<Map<String,String>>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/logs/files",
+          "request_dto": null,
+          "response_dto": "List<Map>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/logs/files/{logName}",
+          "request_dto": null,
+          "response_dto": "Log file stream",
+          "status_codes": [
+            200,
+            404
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/system/log/config",
+          "request_dto": null,
+          "response_dto": "text/plain",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/system/log/config",
+          "request_dto": "text/plain",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/ActivationResource.java",
+      "base_path": "/v1/activation",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/activation",
+          "request_dto": null,
+          "response_dto": "Activation",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/activation",
+          "request_dto": "text/plain activation key",
+          "response_dto": "Activation",
+          "status_codes": [
+            200,
+            501
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/AuthenticationResource.java",
+      "base_path": "/v1/authentication",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/authentication/logout",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/GatewayResource.java",
+      "base_path": "/v1/gateway",
+      "endpoints": [
+        {
+          "method": "GET|POST|PUT|DELETE|HEAD",
+          "path": "/v1/gateway/{subResources:*}",
+          "request_dto": "InputStream (POST/PUT)",
+          "response_dto": "Proxied Response",
+          "status_codes": [
+            200,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/ManagerResource.java",
+      "base_path": "/v1",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/status",
+          "request_dto": null,
+          "response_dto": "Map<String, PipelineStateJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/status",
+          "request_dto": null,
+          "response_dto": "PipelineStateJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/start",
+          "request_dto": "Map<String,Object>",
+          "response_dto": "PipelineStateJson",
+          "status_codes": [
+            200,
+            400
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/start",
+          "request_dto": "List<String>",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/stop",
+          "request_dto": null,
+          "response_dto": "PipelineStateJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/stop",
+          "request_dto": "List<String>",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/forceStop",
+          "request_dto": null,
+          "response_dto": "PipelineStateJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/forceStop",
+          "request_dto": "List<String>",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/committedOffsets",
+          "request_dto": null,
+          "response_dto": "SourceOffsetJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/committedOffsets",
+          "request_dto": "SourceOffsetJson",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/resetOffset",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/resetOffsets",
+          "request_dto": "List<String>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/metrics",
+          "request_dto": null,
+          "response_dto": "MetricRegistryJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/v1/pipeline/{pipelineId}/snapshot/{snapshotName}",
+          "request_dto": "Map<String,Object>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/snapshot/{snapshotName}",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/snapshots",
+          "request_dto": null,
+          "response_dto": "List<SnapshotInfoJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/snapshots",
+          "request_dto": null,
+          "response_dto": "List<SnapshotInfoJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/snapshot/{snapshotName}/status",
+          "request_dto": null,
+          "response_dto": "SnapshotInfoJson",
+          "status_codes": [
+            200,
+            404
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/snapshot/{snapshotName}",
+          "request_dto": null,
+          "response_dto": "SnapshotDataJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/pipeline/{pipelineId}/snapshot/{snapshotName}",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/pipeline/{pipelineId}/history",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/errorRecords",
+          "request_dto": null,
+          "response_dto": "List<RecordJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/errorMessages",
+          "request_dto": null,
+          "response_dto": "List<ErrorMessageJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/history",
+          "request_dto": null,
+          "response_dto": "List<PipelineStateJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/sampledRecords",
+          "request_dto": null,
+          "response_dto": "List<SampledRecordJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/alerts",
+          "request_dto": null,
+          "response_dto": "List<AlertInfoJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/pipeline/{pipelineId}/alerts",
+          "request_dto": null,
+          "response_dto": "Boolean",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/PreviewResource.java",
+      "base_path": "/v1",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/preview",
+          "request_dto": "List<StageOutputJson>",
+          "response_dto": "PreviewInfoJson",
+          "status_codes": [
+            200,
+            400
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/dynamicPreview",
+          "request_dto": "DynamicPreviewRequestWithOverridesJson",
+          "response_dto": "PreviewInfoJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/preview/{previewerId}/status",
+          "request_dto": null,
+          "response_dto": "PreviewInfoJson",
+          "status_codes": [
+            200,
+            404
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/preview/{previewerId}",
+          "request_dto": null,
+          "response_dto": "PreviewOutputJson",
+          "status_codes": [
+            200,
+            404
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/pipeline/{pipelineId}/preview/{previewerId}",
+          "request_dto": null,
+          "response_dto": "PreviewInfoJson",
+          "status_codes": [
+            200,
+            404
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/rawSourcePreview",
+          "request_dto": null,
+          "response_dto": "RawPreview",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/validate",
+          "request_dto": null,
+          "response_dto": "PreviewInfoJson",
+          "status_codes": [
+            200,
+            400
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/PipelineStoreResource.java",
+      "base_path": "/v1",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/count",
+          "request_dto": null,
+          "response_dto": "Map {count}",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/systemLabels",
+          "request_dto": null,
+          "response_dto": "List<String>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/labels",
+          "request_dto": null,
+          "response_dto": "Set<String>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines",
+          "request_dto": null,
+          "response_dto": "List<PipelineInfoJson> or [pipelines, statuses]",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/delete",
+          "request_dto": "List<String>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/deleteByFiltering",
+          "request_dto": null,
+          "response_dto": "List<String>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/import",
+          "request_dto": "multipart file",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/export",
+          "request_dto": "List<String>",
+          "response_dto": "Zip stream",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}",
+          "request_dto": null,
+          "response_dto": "PipelineConfigurationJson | PipelineInfoJson | List<PipelineRevInfo> | String",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/v1/pipeline/{pipelineTitle}",
+          "request_dto": null,
+          "response_dto": "PipelineConfigurationJson or PipelineEnvelopeJson (draft)",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/v1/fragment/{pipelineFragmentTitle}",
+          "request_dto": "List<StageConfigurationJson>",
+          "response_dto": "PipelineFragmentConfigurationJson or PipelineFragmentEnvelopeJson",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/pipeline/{pipelineId}",
+          "request_dto": null,
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}",
+          "request_dto": "PipelineConfigurationJson",
+          "response_dto": "PipelineConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/uiInfo",
+          "request_dto": "Map",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/metadata",
+          "request_dto": "Map<String,Object>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/rules",
+          "request_dto": null,
+          "response_dto": "RuleDefinitionsJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/rules",
+          "request_dto": "RuleDefinitionsJson",
+          "response_dto": "RuleDefinitionsJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipeline/{pipelineId}/export",
+          "request_dto": null,
+          "response_dto": "PipelineEnvelopeJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/import",
+          "request_dto": "PipelineEnvelopeJson",
+          "response_dto": "PipelineEnvelopeJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipeline/{pipelineId}/importFromURL",
+          "request_dto": null,
+          "response_dto": "PipelineEnvelopeJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/fragment/{fragmentId}/import",
+          "request_dto": "PipelineFragmentEnvelopeJson",
+          "response_dto": "PipelineFragmentEnvelopeJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/addLabels",
+          "request_dto": "AddLabelsRequestJson",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/pipelines/executable",
+          "request_dto": null,
+          "response_dto": "Edge executable stream",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/publishToEdge",
+          "request_dto": "Map (edgeHttpUrl, pipelineIds)",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/pipelines/downloadFromEdge",
+          "request_dto": "String edgeHttpUrl",
+          "response_dto": "MultiStatusResponseJson",
+          "status_codes": [
+            207
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/detachedstage",
+          "request_dto": null,
+          "response_dto": "DetachedStageConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/detachedstage",
+          "request_dto": "DetachedStageConfigurationJson",
+          "response_dto": "DetachedStageConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/detachedconnection",
+          "request_dto": "DetachedConnectionConfigurationJson",
+          "response_dto": "DetachedConnectionConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/PipelineUpgraderResource.java",
+      "base_path": "/v1",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/pipeline-upgrader",
+          "request_dto": "PipelineConfigurationJson",
+          "response_dto": "PipelineConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/StageLibraryResource.java",
+      "base_path": "/v1",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/definitions",
+          "request_dto": null,
+          "response_dto": "DefinitionsJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/definitions/stages/{library}/{stageName}/icon",
+          "request_dto": null,
+          "response_dto": "Image stream",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/stageLibraries/list",
+          "request_dto": null,
+          "response_dto": "Repository manifest list",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/stageLibraries/install",
+          "request_dto": "List<String>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/stageLibraries/uninstall",
+          "request_dto": "List<String>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/stageLibraries/extras/list",
+          "request_dto": null,
+          "response_dto": "List<StageLibraryExtrasJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/stageLibraries/extras/{library}/upload",
+          "request_dto": "multipart file",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/stageLibraries/extras/delete",
+          "request_dto": "List<StageLibraryExtrasJson>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/stageLibraries/classpathHealth",
+          "request_dto": null,
+          "response_dto": "List<ClasspathValidatorResult>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/definitions/connections",
+          "request_dto": null,
+          "response_dto": "ConnectionsJson",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/ControlHubResource.java",
+      "base_path": "/v1/controlHub",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/controlHub/publishPipeline/{pipelineId}",
+          "request_dto": null,
+          "response_dto": "PipelineConfigurationJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/pipelines",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/pipeline/{pipelineCommitId}",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/pipeline/{pipelineId}/log",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/currentUser",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/users",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/controlHub/groups",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/GroupManagementResource.java",
+      "base_path": "/v1/usermanagement/groups",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/usermanagement/groups",
+          "request_dto": null,
+          "response_dto": "OkPaginationRestResponse<RString>",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/UserManagementResource.java",
+      "base_path": "/v1/usermanagement/users",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/usermanagement/users",
+          "request_dto": "RestRequest<RUser>",
+          "response_dto": "OkRestResponse<RResetPasswordLink>",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/usermanagement/users/{id}",
+          "request_dto": "RestRequest<RUser>",
+          "response_dto": "OkRestResponse<RUser>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/usermanagement/users/{id}",
+          "request_dto": null,
+          "response_dto": "OkRestResponse<Void>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/usermanagement/users",
+          "request_dto": null,
+          "response_dto": "OkPaginationRestResponse<RUser>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/usermanagement/users/{id}/changePassword",
+          "request_dto": "RestRequest<RChangePassword>",
+          "response_dto": "OkRestResponse<Void>",
+          "status_codes": [
+            204
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/usermanagement/users/{id}/resetPassword",
+          "request_dto": null,
+          "response_dto": "OkRestResponse<RResetPasswordLink>",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/AclStoreResource.java",
+      "base_path": "/v1/acl",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/v1/acl/{pipelineId}",
+          "request_dto": null,
+          "response_dto": "AclJson",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/acl/{pipelineId}",
+          "request_dto": "AclJson",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/acl/{pipelineId}/permissions",
+          "request_dto": null,
+          "response_dto": "List<PermissionJson>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/acl/pipelines/subjects",
+          "request_dto": null,
+          "response_dto": "Map",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/acl/pipelines/subjects",
+          "request_dto": "Map<String,String>",
+          "response_dto": "Response (empty)",
+          "status_codes": [
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "module": "container/src/main/java/com/streamsets/datacollector/restapi/rbean/secrets/SecretResource.java",
+      "base_path": "/v1/secrets",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/v1/secrets/text/ctx=SecretManage",
+          "request_dto": "RestRequest<RSecret>",
+          "response_dto": "OkRestResponse<RSecret>",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/secrets/file/ctx=SecretManage",
+          "request_dto": "multipart form",
+          "response_dto": "OkRestResponse<RSecret>",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/secrets/{secretId}/text/ctx=SecretManage",
+          "request_dto": "RestRequest<RSecret>",
+          "response_dto": "OkRestResponse<RSecret>",
+          "status_codes": [
+            201
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/v1/secrets/{secretId}/file/ctx=SecretManage",
+          "request_dto": "multipart form",
+          "response_dto": "OkRestResponse<RSecret>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1/secrets/{secretId}/ctx=SecretManage",
+          "request_dto": null,
+          "response_dto": "OkRestResponse<RSecret>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/secrets/ctx=SecretList",
+          "request_dto": null,
+          "response_dto": "OkPaginationRestResponse<RSecret>",
+          "status_codes": [
+            200
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/secrets/sshTunnelPublicKey",
+          "request_dto": null,
+          "response_dto": "String",
+          "status_codes": [
+            200,
+            500
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/v1/secrets/get",
+          "request_dto": null,
+          "response_dto": "String",
+          "status_codes": [
+            200,
+            501
+          ]
+        }
+      ]
+    }
+  ],
+  "commands_used": [
+    "rg \"@(Path|GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\" container container-common",
+    "rg \"auth|session|login|logout|token\" container container-common",
+    "rg \"ExceptionMapper|@Provider\" container/src/main/java/com/streamsets/datacollector/restapi",
+    "sed -n (various) on REST/auth modules"
+  ]
+}
